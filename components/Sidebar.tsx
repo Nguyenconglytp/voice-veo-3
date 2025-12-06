@@ -30,9 +30,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ config, setConfig, onPreviewVo
   useEffect(() => {
     if (config.isLicensed) {
       if (config.expiryTimestamp) {
-        // It's a short-term key
+        // It's a short-term key (Trial)
         const date = new Date(config.expiryTimestamp);
-        setExpiryDateText(`18 Ngày (Hết: ${date.getDate()}/${date.getMonth()+1})`);
+        const now = Date.now();
+        // Calculate days left, ensuring at least 0
+        const daysLeft = Math.max(0, Math.ceil((config.expiryTimestamp - now) / (1000 * 60 * 60 * 24)));
+        
+        setExpiryDateText(`${daysLeft} Ngày (Hết: ${date.getDate()}/${date.getMonth()+1})`);
         
         // Start Countdown Interval
         const interval = setInterval(() => {

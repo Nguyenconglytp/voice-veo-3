@@ -1,4 +1,5 @@
-/// <reference types="vite/client" />
+// Fixed: Removed reference to missing vite/client types
+// /// <reference types="vite/client" />
 
 declare namespace NodeJS {
   interface ProcessEnv {

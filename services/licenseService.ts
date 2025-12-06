@@ -59,6 +59,20 @@ const SHORT_TERM_KEYS = new Set([
   "LD6271", "LD1847", "LD7392", "LD4058", "LD2918"
 ]);
 
+// 3. Danh sách Key DÙNG THỬ (2 NGÀY)
+const TRIAL_2DAY_KEYS = new Set([
+  "LD72019", "LD19283", "LD92837", "LD28374", "LD37482", 
+  "LD46573", "LD50192", "LD61029", "LD72938", "LD83019"
+]);
+
+// 4. Danh sách Key 1 THÁNG (30 NGÀY)
+const MONTH_KEYS = new Set([
+  "LD44912", "LD82103", "LD19482", "LD58201", "LD30492",
+  "LD59281", "LD10492", "LD39582", "LD58291", "LD29481",
+  "LD69382", "LD18392", "LD48201", "LD59203", "LD20491",
+  "LD39102", "LD58293", "LD19402", "LD48293", "LD59102"
+]);
+
 // Helper: Tạo Device ID duy nhất cho máy
 export const getDeviceId = (): string => {
   let deviceId = localStorage.getItem('ld_device_id');
@@ -83,12 +97,16 @@ export const verifyAndLogLicense = async (key: string): Promise<VerifyResult> =>
   
   let isLifetime = false;
   let isShortTerm = false;
+  let isTrial2Day = false;
+  let isMonth = false;
 
   // KIỂM TRA SƠ BỘ DANH SÁCH LOCAL
   if (LIFETIME_KEYS.has(cleanKey)) isLifetime = true;
   else if (SHORT_TERM_KEYS.has(cleanKey)) isShortTerm = true;
+  else if (TRIAL_2DAY_KEYS.has(cleanKey)) isTrial2Day = true;
+  else if (MONTH_KEYS.has(cleanKey)) isMonth = true;
 
-  if (!isLifetime && !isShortTerm) {
+  if (!isLifetime && !isShortTerm && !isTrial2Day && !isMonth) {
     return { isValid: false, message: "Key chưa chính xác" };
   }
 
@@ -123,9 +141,13 @@ export const verifyAndLogLicense = async (key: string): Promise<VerifyResult> =>
     };
   }
 
-  // LOGIC 2: KEY NGẮN HẠN (18 NGÀY) - CẦN SERVER XÁC NHẬN THỜI GIAN
+  // LOGIC 2, 3, 4: KEY CÓ THỜI HẠN (18 NGÀY, 2 NGÀY, 30 NGÀY) - CẦN SERVER XÁC NHẬN THỜI GIAN
   // Bắt buộc phải chờ Server trả về thời gian chuẩn để đồng bộ giữa các thiết bị
-  if (isShortTerm) {
+  if (isShortTerm || isTrial2Day || isMonth) {
+    let keyType = '18 Days Trial';
+    if (isTrial2Day) keyType = '2 Days Trial';
+    if (isMonth) keyType = '30 Days Trial';
+
     try {
       const response = await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
@@ -134,7 +156,7 @@ export const verifyAndLogLicense = async (key: string): Promise<VerifyResult> =>
         body: JSON.stringify({
           key: cleanKey,
           deviceId: deviceId,
-          type: '18 Days Trial' // Flag để Server biết là key ngắn hạn và tính toán ngày
+          type: keyType // Flag để Server biết loại key và tính toán ngày
         })
       });
 
@@ -158,6 +180,10 @@ export const verifyAndLogLicense = async (key: string): Promise<VerifyResult> =>
          const expiryTimestamp = data.expiryTimestamp;
          const expiryDate = new Date(expiryTimestamp);
          
+         // Tính số ngày còn lại để hiển thị message (chỉ để hiển thị trong thông báo)
+         const now = Date.now();
+         const daysLeft = Math.ceil((expiryTimestamp - now) / (1000 * 60 * 60 * 24));
+         
          // Lưu vào máy
          localStorage.setItem('ld_license_key', cleanKey);
          localStorage.setItem('ld_license_status', 'active');
@@ -166,7 +192,7 @@ export const verifyAndLogLicense = async (key: string): Promise<VerifyResult> =>
          return {
             isValid: true,
             message: data.message || "Kích hoạt thành công.",
-            expiry: `18 Ngày (Hết: ${expiryDate.getDate()}/${expiryDate.getMonth()+1})`,
+            expiry: `${daysLeft} Ngày (Hết: ${expiryDate.getDate()}/${expiryDate.getMonth()+1})`,
             expiryTimestamp: expiryTimestamp
          };
       } else {
@@ -190,7 +216,7 @@ export const checkLocalLicense = () => {
   const expiryTsStr = localStorage.getItem('ld_license_expiry_ts');
 
   if (savedKey && status === 'active') {
-    // Nếu có hạn dùng (Key 18 ngày)
+    // Nếu có hạn dùng (Key có thời hạn)
     if (expiryTsStr) {
       const expiryTs = parseInt(expiryTsStr, 10);
       const now = Date.now();

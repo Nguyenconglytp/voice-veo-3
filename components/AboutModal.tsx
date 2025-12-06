@@ -32,8 +32,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
           <div className="bg-black/30 p-4 rounded text-sm text-gray-300 space-y-2 text-left">
             <p><span className="text-gray-500 w-20 inline-block">Owner:</span> LD</p>
-            <p><span className="text-gray-500 w-20 inline-block">Gmail:</span> vuquocken85@gmail.com</p>
-            <p><span className="text-gray-500 w-20 inline-block">Support:</span> 0388272453</p>
+            <p><span className="text-gray-500 w-20 inline-block">Gmail:</span> lydev2003@gmail.com</p>
+            <p><span className="text-gray-500 w-20 inline-block">Support:</span> 0377537562</p>
             <p><span className="text-gray-500 w-20 inline-block">License:</span> Commercial Pro</p>
           </div>
 
